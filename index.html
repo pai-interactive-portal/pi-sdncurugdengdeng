@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="id">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pusat Informasi SDN Curug Dengdeng</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --primary: #0f172a; --accent: #10b981; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #1e293b; }
+    .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
+    .nav-active { background: var(--primary) !important; color: white !important; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2); }
+    .btn-primary { background: linear-gradient(135deg, #10b981 0%, #059669 100%); transition: all 0.3s ease; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
+    .search-focus:focus { ring: 2px; ring-color: #10b981; border-color: transparent; }
+  </style>
+ </head>
+ <body class="min-h-screen pb-12">
+  
+  <div id="loading-overlay" class="fixed inset-0 bg-slate-900/10 backdrop-blur-md flex items-center justify-center z-[100]">
+    <div class="flex flex-col items-center">
+      <div class="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  </div>
+
+  <header class="bg-slate-900 text-white pt-12 pb-20 px-6">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      <div class="text-center md:text-left">
+        <span class="bg-emerald-500/20 text-emerald-400 px-4 py-1 rounded-full text-m font-semibold mb-4 inline-block tracking-wide">Pusat Informasi</span>
+        <h1 class="text-4xl md:text-5xl font-extrabold mb-2">SD Negeri Curug Dengdeng</h1>
+        <p class="text-slate-400 text-lg">Portal Informasi dan Agenda Kegiatan</p>
+      </div>
+      <div class="text-right hidden md:block">
+        <p id="current-date" class="font-bold text-xl"></p>
+        <p id="current-time" class="text-emerald-400 font-medium"></p>
+      </div>
+    </div>
+  </header>
+
+  <nav class="max-w-4xl mx-auto -mt-8 px-4 sticky top-6 z-50">
+    <div class="bg-white/90 backdrop-blur-md p-2 rounded-2xl shadow-xl border border-slate-200 flex flex-wrap justify-center gap-2">
+      <button onclick="showTab('home')" id="tab-home" class="tab-btn nav-active px-6 py-2.5 rounded-xl font-semibold transition-all">🏠 Beranda</button>
+      <button onclick="showTab('agenda')" id="tab-agenda" class="tab-btn px-6 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-slate-50 transition-all">📅 Agenda</button>
+      <button onclick="showTab('pengumuman')" id="tab-pengumuman" class="tab-btn px-6 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-slate-50 transition-all">📢 Pengumuman</button>
+      <button onclick="showTab('admin')" id="tab-admin" class="tab-btn px-6 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-slate-50 transition-all">🔐 Pengelola</button>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto p-6 mt-8">
+    
+    <div id="content-home" class="tab-content animate-fade">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div class="glass-card p-6 rounded-3xl border-b-4 border-emerald-500">
+          <p class="text-slate-500 text-s font-bold capitalize mb-1">Status Server:</p>
+          <h3 class="text-lg font-bold text-emerald-600 flex items-center gap-2">● Aktif</h3>
+        </div>
+        <div class="glass-card p-6 rounded-3xl border-b-4 border-rose-500">
+          <p class="text-slate-500 text-s font-bold capitalize mb-1">Pengumuman:</p>
+          <h3 id="stat-pengumuman" class="text-2xl font-black text-slate-800">0</h3>
+        </div>
+        <div class="glass-card p-6 rounded-3xl border-b-4 border-amber-500">
+          <p class="text-slate-500 text-s font-bold capitalize mb-1">Agenda:</p>
+          <h3 id="stat-agenda" class="text-2xl font-black text-slate-800">0</h3>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <section>
+          <h2 class="text-xl font-bold mb-4 flex items-center gap-2"><span class="w-1.5 h-6 bg-rose-500 rounded-full"></span>Pengumuman Terbaru</h2>
+          <div id="recent-pengumuman" class="space-y-4"></div>
+        </section>
+        <section>
+          <h2 class="text-xl font-bold mb-4 flex items-center gap-2"><span class="w-1.5 h-6 bg-amber-500 rounded-full"></span>Agenda Terdekat</h2>
+          <div id="recent-agenda" class="space-y-4"></div>
+        </section>
+      </div>
+    </div>
+
+    <div id="content-list" class="tab-content hidden animate-fade">
+      <div class="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between">
+        <h2 id="list-title" class="text-3xl font-bold text-slate-800">Daftar Informasi</h2>
+        
+        <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+          <div class="relative group">
+            <span class="absolute left-4 top-3.5 text-slate-400">🔍</span>
+            <input type="text" id="search-input" oninput="handleFilter()" placeholder="Cari..." 
+              class="w-full md:w-64 pl-11 pr-4 py-3 rounded-2xl bg-white border border-slate-200 shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all">
+          </div>
+          
+          <select id="filter-priority" onchange="handleFilter()" class="px-4 py-3 rounded-2xl bg-white border border-slate-200 shadow-sm outline-none font-medium text-slate-600">
+            <option value="all">Semua Prioritas</option>
+            <option value="urgent">Mendesak</option>
+            <option value="important">Penting</option>
+            <option value="normal">Normal</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="main-data-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        </div>
+      
+      <div id="no-data-msg" class="hidden py-20 text-center">
+        <p class="text-slate-400 text-lg italic">Tidak ada data yang sesuai dengan pencarian.</p>
+      </div>
+    </div>
+
+    <div id="content-admin" class="tab-content hidden animate-fade">
+      <div id="login-section" class="max-w-md mx-auto py-12">
+        <div class="glass-card p-8 rounded-3xl">
+          <h2 class="text-2xl font-bold text-center mb-6">Panel Pengelola</h2>
+          <form id="login-form" class="space-y-4">
+            <input type="password" id="input-password" placeholder="Kode Akses" class="w-full px-4 py-3 rounded-xl bg-slate-100 border-none outline-none focus:ring-2 focus:ring-emerald-500">
+            <button type="submit" class="w-full btn-primary text-white font-bold py-3 rounded-xl">Masuk</button>
+          </form>
+        </div>
+      </div>
+
+      <div id="add-section" class="hidden">
+        <div class="flex justify-between items-center mb-8">
+            <h2 id="form-title" class="text-3xl font-bold">Kelola Pengumuman dan Agenda Kegiatan</h2>
+            <button onclick="logout()" class="text-slate-400 hover:text-red-500">Keluar</button>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <form id="add-form" class="glass-card p-6 rounded-3xl space-y-4 h-fit">
+                <input type="hidden" id="edit-id">
+                <select id="input-type" class="w-full px-4 py-2 rounded-xl bg-slate-50 border">
+                    <option value="pengumuman">Pengumuman</option>
+                    <option value="agenda">Agenda</option>
+                </select>
+                <input type="text" id="input-title" placeholder="Judul..." required class="w-full px-4 py-2 rounded-xl bg-slate-50 border">
+                <textarea id="input-content" rows="4" placeholder="Badan/Isi..." required class="w-full px-4 py-2 rounded-xl bg-slate-50 border"></textarea>
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="date" id="input-date" required class="w-full px-4 py-2 rounded-xl bg-slate-50 border">
+                    <select id="input-priority" class="w-full px-4 py-2 rounded-xl bg-slate-50 border">
+                        <option value="normal">Normal</option>
+                        <option value="important">Penting</option>
+                        <option value="urgent">Mendesak</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" id="submit-btn" class="flex-1 btn-primary text-white font-bold py-3 rounded-xl">Simpan</button>
+                    <button type="button" id="cancel-edit" class="hidden flex-1 bg-slate-200 py-3 rounded-xl" onclick="resetForm()">Batal</button>
+                </div>
+            </form>
+            <div class="lg:col-span-2 space-y-3" id="admin-manage-list"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden">
+        <div id="modal-accent" class="h-2 w-full"></div>
+        <div class="p-8">
+            <div class="flex justify-between mb-4">
+                <span id="detail-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest"></span>
+                <button onclick="closeModal()" class="text-slate-300 hover:text-slate-600">✕</button>
+            </div>
+            <h2 id="detail-title" class="text-3xl font-bold text-slate-800 mb-2"></h2>
+            <p id="detail-meta" class="text-slate-400 text-sm mb-6"></p>
+            <div class="bg-slate-50 p-6 rounded-2xl text-slate-700 whitespace-pre-wrap leading-relaxed" id="detail-content"></div>
+            <button onclick="closeModal()" class="w-full mt-8 bg-slate-100 py-4 rounded-2xl font-bold text-slate-600">Tutup</button>
+        </div>
+    </div>
+  </div>
+
+  <script>
+    const CONFIG = {
+      API_KEY: '$2a$10$.spdT2pNuCqO7QRCMBn8Rus6SfrjOiry0.2xXtbzgg.MYPXUmgQNy',
+      BIN_ID: '69579c8f43b1c97be9141680',
+      ACCESS_CODE: '20201886'
+    };
+    const API_URL = `https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`;
+    
+    let allData = [];
+    let currentTab = 'home';
+    let isLoggedIn = false;
+
+    async function init() {
+      updateClock(); setInterval(updateClock, 1000);
+      await loadData();
+      document.getElementById('loading-overlay').classList.add('hidden');
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch(`${API_URL}/latest`, { headers: { 'X-Master-Key': CONFIG.API_KEY }});
+        const json = await res.json();
+        allData = json.record.data || [];
+        renderUI();
+      } catch (e) { console.error("Sync Error"); }
+    }
+
+    async function saveData() {
+      try {
+        await fetch(API_URL, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-Master-Key': CONFIG.API_KEY },
+          body: JSON.stringify({ data: allData })
+        });
+        return true;
+      } catch (e) { return false; }
+    }
+
+    function renderUI() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('stat-pengumuman').textContent = allData.filter(d => d.type === 'pengumuman').length;
+      document.getElementById('stat-agenda').textContent = allData.filter(d => d.type === 'agenda').length;
+
+      const latestPeng = allData.filter(d => d.type === 'pengumuman').sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 3);
+      const upcomingAgen = allData.filter(d => d.type === 'agenda' && d.date >= today).sort((a,b) => new Date(a.date) - new Date(b.date)).slice(0, 3);
+
+      document.getElementById('recent-pengumuman').innerHTML = latestPeng.map(i => createCard(i)).join('') || '<p class="text-slate-400 italic">- belum ada pengumuman -</p>';
+      document.getElementById('recent-agenda').innerHTML = upcomingAgen.map(i => createCard(i)).join('') || '<p class="text-slate-400 italic">- tidak ada agenda mendatang -</p>';
+      
+      handleFilter(); // Update main list based on search/filter
+      if(isLoggedIn) renderAdminList();
+    }
+
+    // New Filter & Search Logic
+    function handleFilter() {
+      const query = document.getElementById('search-input').value.toLowerCase();
+      const priorityFilter = document.getElementById('filter-priority').value;
+      const typeFilter = currentTab === 'agenda' ? 'agenda' : 'pengumuman';
+
+      let filtered = allData.filter(item => {
+        const matchesType = (currentTab === 'home' || currentTab === 'admin') ? true : item.type === typeFilter;
+        const matchesSearch = item.title.toLowerCase().includes(query) || item.content.toLowerCase().includes(query);
+        const matchesPriority = priorityFilter === 'all' ? true : item.priority === priorityFilter;
+        return matchesType && matchesSearch && matchesPriority;
+      });
+
+      // Sort by date descending
+      filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+      const listEl = document.getElementById('main-data-list');
+      const noData = document.getElementById('no-data-msg');
+
+      if(filtered.length === 0) {
+        listEl.innerHTML = '';
+        noData.classList.remove('hidden');
+      } else {
+        noData.classList.add('hidden');
+        listEl.innerHTML = filtered.map(item => createCard(item)).join('');
+      }
+    }
+
+    function createCard(item) {
+      const colors = { urgent: 'border-rose-500', important: 'border-amber-500', normal: 'border-emerald-500' };
+	  const dateParts = item.date.split('-'); 
+      const formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0].slice(-2)}`;
+      return `
+        <div onclick="showDetail('${item.id}')" class="glass-card p-5 rounded-2xl cursor-pointer hover:shadow-lg transition-all border-l-4 ${colors[item.priority]} animate-fade">
+          <div class="flex justify-between items-start">
+            <div>
+                <h4 class="font-bold text-slate-800 line-clamp-1">${item.title}</h4>
+                <p class="text-xs text-slate-400 mt-1 capitalize font-semibold tracking-tighter">️${item.type}: ${formattedDate}</p>
+            </div>
+            <span class="text-lg">${item.type === 'agenda' ? '📅' : '📢'}</span>
+          </div>
+        </div>`;
+    }
+
+    function renderAdminList() {
+        document.getElementById('admin-manage-list').innerHTML = allData.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).map(item => `
+            <div class="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div class="truncate pr-4">
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-500 capitalize">${item.type}</span>
+                    <h4 class="font-bold text-slate-700 truncate">${item.title}</h4>
+                </div>
+                <div class="flex gap-1">
+                    <button onclick="editItem('${item.id}')" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg">✏️</button>
+                    <button onclick="deleteItem('${item.id}')" class="p-2 text-rose-500 hover:bg-rose-50 rounded-lg">🗑️</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function showTab(name) {
+      currentTab = name;
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('nav-active'));
+      document.getElementById(`tab-${name}`).classList.add('nav-active');
+
+      if(name === 'agenda' || name === 'pengumuman') {
+        document.getElementById('content-list').classList.remove('hidden');
+        document.getElementById('list-title').textContent = name === 'agenda' ? 'Daftar Agenda' : 'Daftar Pengumuman';
+        handleFilter();
+      } else {
+        document.getElementById(`content-${name}`).classList.remove('hidden');
+      }
+    }
+
+    function showDetail(id) {
+        const item = allData.find(d => d.id === id);
+		const dP = item.date.split('-');
+		const dateSmall = `${dP[2]}-${dP[1]}-${dP[0].slice(-2)}`;
+        const pMap = {
+            urgent: { bg: 'bg-rose-100 text-rose-600', accent: 'bg-rose-500', label: 'Mendesak' },
+            important: { bg: 'bg-amber-100 text-amber-600', accent: 'bg-amber-500', label: 'Penting' },
+            normal: { bg: 'bg-emerald-100 text-emerald-600', accent: 'bg-emerald-500', label: 'Normal' }
+        };
+        const s = pMap[item.priority] || pMap.normal;
+        document.getElementById('modal-accent').className = `h-2 w-full ${s.accent}`;
+        document.getElementById('detail-badge').className = `px-3 py-1 rounded-full text-[10px] font-bold capitalize tracking-widest ${s.bg}`;
+        document.getElementById('detail-badge').textContent = s.label;
+        document.getElementById('detail-title').textContent = item.title;
+        document.getElementById('detail-meta').textContent = `🗓️ ${dateSmall}`;
+        document.getElementById('detail-content').textContent = item.content;
+        document.getElementById('detail-modal').classList.remove('hidden');
+    }
+
+    function closeModal() { document.getElementById('detail-modal').classList.add('hidden'); }
+
+    // Admin Functions
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (document.getElementById('input-password').value === CONFIG.ACCESS_CODE) {
+        isLoggedIn = true;
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('add-section').classList.remove('hidden');
+        renderAdminList();
+      }
+    });
+
+    function editItem(id) {
+        const item = allData.find(d => d.id === id);
+        document.getElementById('edit-id').value = item.id;
+        document.getElementById('input-type').value = item.type;
+        document.getElementById('input-title').value = item.title;
+        document.getElementById('input-content').value = item.content;
+        document.getElementById('input-date').value = item.date;
+        document.getElementById('input-priority').value = item.priority;
+        document.getElementById('form-title').textContent = "Edit Data";
+        document.getElementById('submit-btn').textContent = "Perbaharui";
+        document.getElementById('cancel-edit').classList.remove('hidden');
+    }
+
+    document.getElementById('add-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const eid = document.getElementById('edit-id').value;
+      const data = {
+        id: eid || Date.now().toString(),
+        type: document.getElementById('input-type').value,
+        title: document.getElementById('input-title').value,
+        content: document.getElementById('input-content').value,
+        date: document.getElementById('input-date').value,
+        priority: document.getElementById('input-priority').value,
+        createdAt: new Date().toISOString()
+      };
+
+      if(eid) {
+        allData = allData.map(d => d.id === eid ? data : d);
+      } else {
+        allData.push(data);
+      }
+
+      if (await saveData()) {
+        resetForm();
+        renderUI();
+        alert("Berhasil disimpan!");
+      }
+    });
+
+    async function deleteItem(id) {
+        if(confirm('Hapus data ini?')) {
+            allData = allData.filter(d => d.id !== id);
+            await saveData();
+            renderUI();
+        }
+    }
+
+    function resetForm() {
+        document.getElementById('add-form').reset();
+        document.getElementById('edit-id').value = "";
+        document.getElementById('form-title').textContent = "Kelola Pengumuman dan Agenda Kegiatan";
+        document.getElementById('submit-btn').textContent = "Simpan";
+        document.getElementById('cancel-edit').classList.add('hidden');
+    }
+
+    function logout() { isLoggedIn = false; location.reload(); }
+    
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('current-date').textContent = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      document.getElementById('current-time').textContent = now.toLocaleTimeString('id-ID');
+    }
+
+    init();
+  </script>
+ </body>
+</html>
